@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markdown Viewer</title>
+  <title>Markdown Notes Viewer</title>
   <link rel="stylesheet" href="styles.css">
   
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="[https://cdn.jsdelivr.net/npm/marked/marked.min.js](https://cdn.jsdelivr.net/npm/marked/marked.min.js)"></script>
 </head>
 <body>
 
@@ -23,76 +23,76 @@
   <main id="content"></main>
 
   <script src="script.js"></script>
+
   <script>
-  // Helper function to encode PlantUML text into the format required by the official API
-  function encodePlantUML(pumlText) {
-    // 1. Clean up spacing issues
-    pumlText = pumlText.trim();
-    
-    // 2. Use the official lightweight text encoder for PlantUML
-    // A quick workaround for Javascript frontend execution is using a simple deflate/hex layout or the raw image microservice.
-    // To make it incredibly reliable without massive extra JS libraries, we pass it to a free compression wrapper:
-    return window.btoa(unescape(encodeURIComponent(pumlText)));
-  }
-
-  async function loadMarkdown() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const fileName = urlParams.get('file');
-    const contentDiv = document.getElementById('content');
-
-    if (!fileName) {
-      contentDiv.innerHTML = "<h1>Error</h1><p>No file specified to display.</p>";
-      return;
-    }
-
-    try {
-      const response = await fetch(fileName);
-      if (!response.ok) throw new Error("File not found");
-      const markdownText = await response.text();
-
-      // 1. Render the standard Markdown text to HTML using Marked.js
-      contentDiv.innerHTML = marked.parse(markdownText);
-
-      // 2. Find all code blocks that contain PlantUML diagrams
-      const codeBlocks = contentDiv.querySelectorAll('pre code');
-      
-      codeBlocks.forEach((block) => {
-        const text = block.textContent;
-        
-        // Check if this specific code block is meant to be a PlantUML diagram
-        if (text.includes('@startuml')) {
-          // Extract the diagram text inside the start/end tags
-          const pumlContent = text.replace('@startuml', '').replace('@enduml', '').trim();
-          
-          // Use the dynamic Kroki or PlantUML public rendering microservice 
-          // (Kroki handles raw text strings quickly over a simple GET request via hex/base64)
-          const diagramUrl = `https://kroki.io/plantuml/svg/${encodeURIComponent(pumlContent)}`;
-          
-          // Create an image element to hold our visual chart
-          const img = document.createElement('img');
-          img.src = diagramUrl;
-          img.alt = "Rust Architecture Diagram";
-          img.className = "puml-diagram"; // Matches your global image responsive constraints
-          
-          // Replace the ugly plain text block with our newly generated graphic
-          const preElement = block.parentElement;
-          preElement.parentNode.replaceChild(img, preElement);
+    // Define a clean parser rule hook to intercept codeblocks before compilation
+    const renderer = {
+      code(code, infostring, escaped) {
+        // 1. Detect PlantUML code blocks
+        if (infostring === 'plantuml' || code.includes('@startuml')) {
+          const cleanCode = code.replace('@startuml', '').replace('@enduml', '').trim();
+          // Route data parameters cleanly to Kroki's server API to transform text variables into beautiful graphics
+          const diagramUrl = `https://kroki.io/plantuml/svg/${encodeURIComponent(cleanCode)}`;
+          return `<img src="${diagramUrl}" alt="Rust Memory Diagram Structure" class="puml-diagram" style="display:block; margin:1.5rem auto; max-width:100%; height:auto;">`;
         }
-      });
 
-      // Update the page title matching the heading
-      const firstH1 = contentDiv.querySelector('h1');
-      if (firstH1) document.title = firstH1.textContent;
+        // 2. Detect Rust custom code tokens for syntax highlighting classes mapping
+        if (infostring === 'rust') {
+          // Tokenize standard keywords dynamically to fit your variables mapping tokens rule properties
+          let highlighted = code
+            .replace(/&amp;/g, '&')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            // Keywords
+            .replace(/\b(let|fn|struct|impl|pub|use|mut|return)\b/g, '<span class="kw">$1</span>')
+            // String values literals 
+            .replace(/(".*?")/g, '<span class="st">$1</span>')
+            // Integer numeric primitives tokens
+            .replace(/\b([0-9]+i32|[0-9]+u64|[0-9]+)\b/g, '<span class="dv">$1</span>')
+            // Explanatory comment streams blocks
+            .replace(/(\/\/.*)/g, '<span class="co">$1</span>')
+            // Method macro tokens
+            .replace(/\b(\w+!)\b/g, '<span class="fu">$1</span>');
 
-    } catch (error) {
-      contentDiv.innerHTML = `<h1>Error</h1><p>Could not load "${fileName}".</p>`;
+          return `<pre class="sourceCode rust"><code>${highlighted}</code></pre>`;
+        }
+
+        // 3. Fallback layout configuration tracker to hold your native ASCII layouts properly 
+        return `<pre><code>${code}</code></pre>`;
+      }
+    };
+
+    // Apply the custom processor hooks configuration directly onto the Marked interpreter
+    marked.use({ renderer });
+
+    async function initializeMarkdownRenderEngine() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const targetFileName = urlParams.get('file');
+      const viewContainer = document.getElementById('content');
+
+      if (!targetFileName) {
+        viewContainer.innerHTML = "<h1>Data Loading Constraint Error</h1><p>No valid source target parameters mapped to reader file path config.</p>";
+        return;
+      }
+
+      try {
+        const networkResponse = await fetch(targetFileName);
+        if (!networkResponse.ok) throw new Error("Target directory lookup fault encountered.");
+        const textPayloadData = await networkResponse.text();
+
+        // Safe evaluation step to process standard structure alongside vector graphics arrays
+        viewContainer.innerHTML = marked.parse(textPayloadData);
+
+        // Dynamically append Document Titles matching context headers
+        const coreHeaderTitle = viewContainer.querySelector('h1');
+        if (coreHeaderTitle) document.title = coreHeaderTitle.textContent;
+
+      } catch (faultSummary) {
+        viewContainer.innerHTML = `<h1>System Interruption Fault</h1><p>Execution error encountered during resolution mapping processing phase.</p>`;
+      }
     }
-  }
 
-  window.addEventListener('DOMContentLoaded', loadMarkdown);
- </script>
-  
-  
+    window.addEventListener('DOMContentLoaded', initializeMarkdownRenderEngine);
+  </script>
 </body>
 </html>
-
