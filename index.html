@@ -7,6 +7,47 @@
   <meta name="author" content="docs/" />
   <title>Rust Programming</title>
   <style>
+    /* 1. Light Theme (Default) */
+:root {
+  --bg-color: #fcfcfc;
+  --text-color: #2c3e50;
+  --accent-color: #3498db;
+}
+
+/* 2. Dark Theme (Deep & Soft, not pure black) */
+[data-theme="dark"] {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --accent-color: #9b59b6;
+}
+
+/* 3. Old Paper / Sepia Theme (Ultra comfortable for reading) */
+[data-theme="sepia"] {
+  --bg-color: #f4ecd8;      /* Warm, vintage paper tint */
+  --text-color: #433422;    /* Soft charcoal/brown instead of harsh black */
+  --accent-color: #8b5a2b;  /* Muted bronze */
+}
+
+/* 4. Nordic Forest / Teal Theme (Cool, dark, and calming) */
+[data-theme="nordic"] {
+  --bg-color: #2e3440;    /* Soft slate blue/gray */
+  --text-color: #eceff4;  /* Crisp frosty white */
+  --accent-color: #88c0d0; /* Soft ice blue */
+}
+
+/* Apply the variables globally */
+
+/* Style for the dropdown menu */
+.theme-selector {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 5px;
+  border: 1px solid var(--text-color);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  cursor: pointer;
+}
+    
     html {
       font-size: 10pt;
       color: #1a1a1a;
@@ -23,11 +64,19 @@
       overflow-wrap: break-word;
       text-rendering: optimizeLegibility;
       font-kerning: normal;
+      background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: sans-serif;
     }
     @media (max-width: 600px) {
       body {
         font-size: 0.9em;
         padding: 12px;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        font-family: sans-serif;
       }
       h1 {
         font-size: 1.8em;
@@ -38,8 +87,10 @@
         background-color: white;
       }
       body {
-        background-color: transparent;
-        color: black;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+       transition: background-color 0.3s ease, color 0.3s ease;
+       font-family: sans-serif;
         font-size: 12pt;
       }
       p, h2, h3 {
@@ -302,7 +353,14 @@
     }
   }
 </style>
-
+<label for="theme-select">Choose Theme: </label>
+<select id="theme-select" class="theme-selector">
+  <option value="light">☀️ Light</option>
+  <option value="dark">🌙 Dark Mode</option>
+  <option value="sepia">📜 Old Paper</option>
+  <option value="nordic">🌲 Nordic Chill</option>
+</select>
+  
 </head>
 <body>
 <header id="title-block-header">
@@ -12572,5 +12630,28 @@ exercises - <a href="https://docs.rs/tokio">Tokio Documentation</a> - <a
 href="https://docs.rs/rayon">Rayon Documentation</a> - <a
 href="https://doc.rust-lang.org/nomicon/">The Nomicon</a> - Unsafe
 Rust</p>
+<script>
+  const themeSelect = document.getElementById('theme-select');
+  
+  // 1. Check for a saved theme preference from previous visits
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  
+  // 2. Apply the saved theme to the <html> element
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  // 3. Set the dropdown menu to show the currently active theme
+  themeSelect.value = savedTheme;
+
+  // 4. Listen for when the user changes the dropdown selection
+  themeSelect.addEventListener('change', (event) => {
+    const selectedTheme = event.target.value;
+    
+    // Apply the chosen theme
+    document.documentElement.setAttribute('data-theme', selectedTheme);
+    
+    // Save it to localStorage so it persists
+    localStorage.setItem('theme', selectedTheme);
+  });
+</script>  
 </body>
 </html>
