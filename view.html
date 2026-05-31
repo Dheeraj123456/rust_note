@@ -25,44 +25,32 @@
   <script src="script.js"></script>
 
   <script>
-    // Define a clean parser rule hook to intercept codeblocks before compilation
+    // Custom syntax highlighting rules for Rust inside your theme
     const renderer = {
-      code(code, infostring, escaped) {
-        // 1. Detect PlantUML code blocks
-        if (infostring === 'plantuml' || code.includes('@startuml')) {
-          const cleanCode = code.replace('@startuml', '').replace('@enduml', '').trim();
-          // Route data parameters cleanly to Kroki's server API to transform text variables into beautiful graphics
-          const diagramUrl = `https://kroki.io/plantuml/svg/${encodeURIComponent(cleanCode)}`;
-          return `<img src="${diagramUrl}" alt="Rust Memory Diagram Structure" class="puml-diagram" style="display:block; margin:1.5rem auto; max-width:100%; height:auto;">`;
-        }
-
-        // 2. Detect Rust custom code tokens for syntax highlighting classes mapping
+      code(code, infostring) {
         if (infostring === 'rust') {
-          // Tokenize standard keywords dynamically to fit your variables mapping tokens rule properties
           let highlighted = code
-            .replace(/&amp;/g, '&')
+            .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             // Keywords
-            .replace(/\b(let|fn|struct|impl|pub|use|mut|return)\b/g, '<span class="kw">$1</span>')
-            // String values literals 
+            .replace(/\b(let|fn|struct|impl|pub|use|mut|return|type)\b/g, '<span class="kw">$1</span>')
+            // Strings
             .replace(/(".*?")/g, '<span class="st">$1</span>')
-            // Integer numeric primitives tokens
+            // Numbers
             .replace(/\b([0-9]+i32|[0-9]+u64|[0-9]+)\b/g, '<span class="dv">$1</span>')
-            // Explanatory comment streams blocks
+            // Comments
             .replace(/(\/\/.*)/g, '<span class="co">$1</span>')
-            // Method macro tokens
+            // Macros / Functions
             .replace(/\b(\w+!)\b/g, '<span class="fu">$1</span>');
 
           return `<pre class="sourceCode rust"><code>${highlighted}</code></pre>`;
         }
-
-        // 3. Fallback layout configuration tracker to hold your native ASCII layouts properly 
+        // Fallback for plain ASCII text diagrams or unformatted blocks
         return `<pre><code>${code}</code></pre>`;
       }
     };
 
-    // Apply the custom processor hooks configuration directly onto the Marked interpreter
     marked.use({ renderer });
 
     async function initializeMarkdownRenderEngine() {
@@ -71,24 +59,36 @@
       const viewContainer = document.getElementById('content');
 
       if (!targetFileName) {
-        viewContainer.innerHTML = "<h1>Data Loading Constraint Error</h1><p>No valid source target parameters mapped to reader file path config.</p>";
+        viewContainer.innerHTML = "<h1>Error</h1><p>No valid source file target specified.</p>";
         return;
       }
 
       try {
         const networkResponse = await fetch(targetFileName);
-        if (!networkResponse.ok) throw new Error("Target directory lookup fault encountered.");
-        const textPayloadData = await networkResponse.text();
+        if (!networkResponse.ok) throw new Error("File fetch failed.");
+        let textPayloadData = await networkResponse.text();
 
-        // Safe evaluation step to process standard structure alongside vector graphics arrays
+        // --- PRE-PROCESSING SCANNER ---
+        // This regex catches everything starting with ``` (plus any language tag) up to ```
+        // and checks if it contains @startuml inside it.
+        const codeBlockRegex = /```[\s\S]*?@startuml([\s\S]*?)@enduml[\s\S]*?```/g;
+        
+        textPayloadData = textPayloadData.replace(codeBlockRegex, (match, pumlContent) => {
+          const cleanCode = pumlContent.trim();
+          // Route the diagram parameters to Kroki
+          const diagramUrl = `https://kroki.io/plantuml/svg/${encodeURIComponent(cleanCode)}`;
+          return `\n\n<img src="${diagramUrl}" alt="Rust Architecture Diagram" class="puml-diagram" style="display:block; margin:1.5rem auto; max-width:100%; height:auto;">\n\n`;
+        });
+
+        // Run the main Markdown compiler on our newly cleaned text data stream
         viewContainer.innerHTML = marked.parse(textPayloadData);
 
-        // Dynamically append Document Titles matching context headers
+        // Update document tab title dynamically
         const coreHeaderTitle = viewContainer.querySelector('h1');
         if (coreHeaderTitle) document.title = coreHeaderTitle.textContent;
 
       } catch (faultSummary) {
-        viewContainer.innerHTML = `<h1>System Interruption Fault</h1><p>Execution error encountered during resolution mapping processing phase.</p>`;
+        viewContainer.innerHTML = `<h1>System Interruption Fault</h1><p>Could not read the markdown file or process data layout arrays smoothly.</p>`;
       }
     }
 
