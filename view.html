@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+  
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+  <div class="theme-selector-container">
+    <label for="themeToggle">Theme:</label>
+    <select id="themeToggle">
+      <option value="light">☀️ Light</option>
+      <option value="dark">🌙 Dark</option>
+      <option value="sepia">📜 Sepia</option>
+      <option value="nordic">🌲 Nordic</option>
+    </select>
+  </div>
+
+  <main id="content"></main>
+
+  <script src="script.js"></script>
+  <script>
+  // Helper function to encode PlantUML text into the format required by the official API
+  function encodePlantUML(pumlText) {
+    // 1. Clean up spacing issues
+    pumlText = pumlText.trim();
+    
+    // 2. Use the official lightweight text encoder for PlantUML
+    // A quick workaround for Javascript frontend execution is using a simple deflate/hex layout or the raw image microservice.
+    // To make it incredibly reliable without massive extra JS libraries, we pass it to a free compression wrapper:
+    return window.btoa(unescape(encodeURIComponent(pumlText)));
+  }
+
+  async function loadMarkdown() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fileName = urlParams.get('file');
+    const contentDiv = document.getElementById('content');
+
+    if (!fileName) {
+      contentDiv.innerHTML = "<h1>Error</h1><p>No file specified to display.</p>";
+      return;
+    }
+
+    try {
+      const response = await fetch(fileName);
+      if (!response.ok) throw new Error("File not found");
+      const markdownText = await response.text();
+
+      // 1. Render the standard Markdown text to HTML using Marked.js
+      contentDiv.innerHTML = marked.parse(markdownText);
+
+      // 2. Find all code blocks that contain PlantUML diagrams
+      const codeBlocks = contentDiv.querySelectorAll('pre code');
+      
+      codeBlocks.forEach((block) => {
+        const text = block.textContent;
+        
+        // Check if this specific code block is meant to be a PlantUML diagram
+        if (text.includes('@startuml')) {
+          // Extract the diagram text inside the start/end tags
+          const pumlContent = text.replace('@startuml', '').replace('@enduml', '').trim();
+          
+          // Use the dynamic Kroki or PlantUML public rendering microservice 
+          // (Kroki handles raw text strings quickly over a simple GET request via hex/base64)
+          const diagramUrl = `https://kroki.io/plantuml/svg/${encodeURIComponent(pumlContent)}`;
+          
+          // Create an image element to hold our visual chart
+          const img = document.createElement('img');
+          img.src = diagramUrl;
+          img.alt = "Rust Architecture Diagram";
+          img.className = "puml-diagram"; // Matches your global image responsive constraints
+          
+          // Replace the ugly plain text block with our newly generated graphic
+          const preElement = block.parentElement;
+          preElement.parentNode.replaceChild(img, preElement);
+        }
+      });
+
+      // Update the page title matching the heading
+      const firstH1 = contentDiv.querySelector('h1');
+      if (firstH1) document.title = firstH1.textContent;
+
+    } catch (error) {
+      contentDiv.innerHTML = `<h1>Error</h1><p>Could not load "${fileName}".</p>`;
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', loadMarkdown);
+ </script>
+  
+  
+</body>
+</html>
+
